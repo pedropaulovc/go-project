@@ -21,7 +21,7 @@ safe-outputs:
     title-prefix: "[Janitor] "
     labels: [janitor]
     max: 1
-    protected-files: fallback-to-issue
+    protected-files: allowed
   create-issue:
     title-prefix: "[Janitor] "
     labels: [janitor]
