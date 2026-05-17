@@ -26,6 +26,14 @@ jobs:
       - run: go vet ./...
       - run: go test -race -coverprofile=coverage.out -covermode=atomic -count=1 ./...
       - run: go tool cover -func=coverage.out
+      - name: Generate coverage JSON
+        run: |
+          go tool cover -func=coverage.out | tail -1 | awk '{print "{\"total\": \"" $3 "\"}"}' > coverage-summary.json
+      - uses: actions/upload-artifact@v7
+        with:
+          name: coverage-baseline
+          path: coverage-summary.json
+          retention-days: 90
 
   e2e-stress:
     runs-on: ubuntu-latest

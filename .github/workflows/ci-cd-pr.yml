@@ -27,6 +27,26 @@ jobs:
       - run: go vet ./...
       - run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
       - run: go tool cover -func=coverage.out
+      - name: Generate coverage JSON
+        run: |
+          go tool cover -func=coverage.out | tail -1 | awk '{print "{\"total\": \"" $3 "\"}"}' > coverage-summary.json
+      - name: Download baseline
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          name: coverage-baseline
+          workflow: ci-cd-main.yml
+          branch: main
+          if_no_artifact_found: warn
+          path: baseline/
+      - name: Report coverage delta
+        run: |
+          current=$(cat coverage-summary.json | grep -o '[0-9.]*')
+          if [ -f baseline/coverage-summary.json ]; then
+            baseline=$(cat baseline/coverage-summary.json | grep -o '[0-9.]*')
+            echo "## Coverage: ${current}% (baseline: ${baseline}%)" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "## Coverage: ${current}% (no baseline yet)" >> "$GITHUB_STEP_SUMMARY"
+          fi
 
   e2e:
     runs-on: ubuntu-latest
