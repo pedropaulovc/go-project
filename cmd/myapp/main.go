@@ -10,8 +10,16 @@ import (
 var version = "dev" //nolint:gochecknoglobals,nolintlint // injected at build time via -ldflags
 
 func main() {
+	os.Exit(run(os.Args[1:]))
+}
+
+func run(args []string) int {
 	root := cmd.NewRoot(version)
+	root.SetArgs(args)
+
 	if err := root.Execute(); err != nil {
-		os.Exit(1)
+		return 1
 	}
+
+	return 0
 }
