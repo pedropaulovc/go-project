@@ -21,7 +21,6 @@ safe-outputs:
     title-prefix: "[Janitor] "
     labels: [janitor]
     max: 1
-    allowed-files: ["AGENTS.md", "README.md"]
     protected-files: fallback-to-issue
   create-issue:
     title-prefix: "[Janitor] "
