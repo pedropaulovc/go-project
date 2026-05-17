@@ -87,6 +87,13 @@ upsert_ruleset "Protect main" <<'JSON'
       }
     },
     {
+      "type": "copilot_code_review",
+      "parameters": {
+        "review_on_push": true,
+        "review_draft_pull_requests": false
+      }
+    },
+    {
       "type": "required_status_checks",
       "parameters": {
         "do_not_enforce_on_create": false,
@@ -97,6 +104,9 @@ upsert_ruleset "Protect main" <<'JSON'
           { "context": "build" }
         ]
       }
+    },
+    {
+      "type": "required_linear_history"
     },
     {
       "type": "deletion"
