@@ -8,7 +8,7 @@ All PRs must pass: `make test-all` (lint + unit tests with coverage + E2E tests)
 
 ### Go
 
-- Go 1.24+ required
+- Go 1.26+ required
 - Use `net/http` standard library (no frameworks unless justified)
 - Errors must be handled explicitly — never use `_` for error returns
 - Use structured logging (`log/slog`)

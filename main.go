@@ -2,7 +2,7 @@
 package main
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"time"
@@ -24,9 +24,10 @@ func main() {
 		ReadHeaderTimeout: readHeaderTimeout,
 	}
 
-	log.Printf("Server starting on :%s", port)
+	slog.Info("server starting", "port", port)
 
 	if err := srv.ListenAndServe(); err != nil {
-		log.Fatalf("Server failed: %v", err)
+		slog.Error("server failed", "error", err)
+		os.Exit(1)
 	}
 }
