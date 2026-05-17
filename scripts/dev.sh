@@ -72,5 +72,5 @@ if command -v air &>/dev/null; then
   air 2>&1 | tee "$LOGFILE"
 else
   echo "WARN: air not installed, falling back to go run (no hot reload). Run 'make tools' to install."
-  go run . 2>&1 | tee "$LOGFILE"
+  go run ./cmd/myapp 2>&1 | tee "$LOGFILE"
 fi

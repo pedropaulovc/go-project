@@ -26,17 +26,3 @@ jobs:
 
       - name: Warm build cache
         run: go build ./...
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: "26"
-          cache: "npm"
-
-      - name: Install JavaScript dependencies
-        timeout-minutes: 2
-        run: for i in 1 2 3; do if npm ci; then break; elif [ "$i" -eq 3 ]; then exit 1; else sleep 15; fi; done
-
-      - name: Install Playwright browsers
-        timeout-minutes: 1
-        run: npx playwright install --with-deps chromium-headless-shell

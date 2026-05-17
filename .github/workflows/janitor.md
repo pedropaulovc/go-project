@@ -85,9 +85,9 @@ Profile the application, identify performance issues, and implement optimization
 
 Pick a random test file and inspect the assertions it is performing. Reflect if they are actually testing behavior or just making weak assertions. Look at the code under test for important business logic and edge cases that should be well covered.
 
-### 8. Add missing E2E tests
+### 8. Add missing integration tests
 
-E2E tests cover the end-to-end user journey. Pick a random feature area and assess whether E2E coverage exists. If not, add Playwright tests.
+Integration tests cover the end-to-end CLI behavior. Pick a random command and assess whether integration test coverage exists (invoking the binary, checking stdout/stderr/exit code). If not, add tests.
 
 ### 9. Update root README.md and AGENTS.md
 

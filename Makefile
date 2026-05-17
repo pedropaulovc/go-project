@@ -1,16 +1,16 @@
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 LDFLAGS := -ldflags "-X main.version=$(VERSION)"
 
-.PHONY: dev build run fmt lint vet test test-coverage test-e2e test-all tools clean
+.PHONY: dev build run fmt lint vet test test-coverage test-all tools docker clean
 
 dev:
 	./scripts/dev.sh
 
 build:
-	go build $(LDFLAGS) -o bin/server .
+	go build $(LDFLAGS) -o bin/myapp ./cmd/myapp
 
 run: build
-	./bin/server
+	./bin/myapp
 
 fmt:
 	gofmt -w .
@@ -31,10 +31,10 @@ test-coverage:
 	@go tool cover -func=coverage.out
 	@go tool cover -html=coverage.out -o coverage.html
 
-test-e2e:
-	npx playwright test
+test-all: lint vet test-coverage
 
-test-all: lint vet test-coverage test-e2e
+docker:
+	docker build --build-arg VERSION=$(VERSION) -t myapp:$(VERSION) .
 
 tools:
 	go install github.com/air-verse/air@latest
@@ -42,4 +42,4 @@ tools:
 	go install golang.org/x/tools/cmd/goimports@latest
 
 clean:
-	rm -rf bin/ coverage.out coverage.html tmp/ playwright-report/ test-results/
+	rm -rf bin/ coverage.out coverage.html tmp/ dist/

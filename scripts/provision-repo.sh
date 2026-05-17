@@ -94,7 +94,7 @@ upsert_ruleset "Protect main" <<'JSON'
         "required_status_checks": [
           { "context": "lint" },
           { "context": "test" },
-          { "context": "e2e" }
+          { "context": "build" }
         ]
       }
     },
