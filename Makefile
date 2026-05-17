@@ -1,4 +1,4 @@
-.PHONY: dev build run lint test test-coverage test-e2e test-all clean
+.PHONY: dev build run lint vet test test-coverage test-e2e test-all clean
 
 dev:
 	go run .
@@ -12,18 +12,22 @@ run: build
 lint:
 	golangci-lint run ./...
 
+vet:
+	go vet ./...
+
 test:
-	go test ./...
+	go test -race ./...
 
 test-coverage:
-	go test -coverprofile=coverage.out -covermode=atomic ./...
-	go tool cover -func=coverage.out
-	go tool cover -html=coverage.out -o coverage.html
+	go test -race -coverprofile=coverage.out -covermode=atomic ./...
+	@echo "--- Coverage report ---"
+	@go tool cover -func=coverage.out
+	@go tool cover -html=coverage.out -o coverage.html
 
 test-e2e:
 	npx playwright test
 
-test-all: lint test-coverage test-e2e
+test-all: lint vet test-coverage test-e2e
 
 clean:
 	rm -rf bin/ coverage.out coverage.html tmp/ playwright-report/ test-results/
