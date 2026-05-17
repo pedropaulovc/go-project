@@ -12,6 +12,7 @@ timeout-minutes: 30
 
 jobs:
   setup:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/setup-go@v6
         with:
