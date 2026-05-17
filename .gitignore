@@ -1,5 +1,6 @@
 # Binaries
 bin/
+dist/
 *.exe
 *.exe~
 *.dll
@@ -20,11 +21,6 @@ coverage.html
 # OS
 .DS_Store
 Thumbs.db
-
-# Node (for Playwright)
-node_modules/
-playwright-report/
-test-results/
 
 # Temp
 tmp/

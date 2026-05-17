@@ -1,19 +1,40 @@
-# Agent Standards
+# Go Project
 
-## Exit Criteria
+## Commands
 
-All PRs must pass: `make test-all` (lint + unit tests with coverage + E2E tests).
+```bash
+make dev            # Dev server with hot reload (air)
+make build          # Build binary with version tag
+make fmt            # Format code (gofmt + goimports)
+make lint           # golangci-lint (strictest config)
+make vet            # go vet
+make test           # Unit tests with race detector
+make test-coverage  # Tests with coverage report
+make test-all       # REQUIRED before push (lint + vet + coverage)
+make tools          # Install dev tools (air, golangci-lint, goimports)
+make docker         # Build container image
+make clean          # Remove build artifacts
+```
 
 ## Code Conventions
 
 ### Go
 
 - Go 1.26+ required
-- Use `net/http` standard library (no frameworks unless justified)
+- Use cobra for CLI commands
 - Errors must be handled explicitly — never use `_` for error returns
 - Use structured logging (`log/slog`)
 - Prefer table-driven tests
 - No global mutable state
+
+### Project Structure
+
+```
+cmd/myapp/          # CLI entrypoint
+internal/cmd/       # Cobra command definitions
+internal/           # Private application logic
+api/v1alpha1/       # CRD types (when doing K8s)
+```
 
 ### File Naming
 
@@ -25,15 +46,14 @@ All PRs must pass: `make test-all` (lint + unit tests with coverage + E2E tests)
 
 - Wrap errors with context: `fmt.Errorf("operation: %w", err)`
 - Let errors propagate to appropriate boundaries
-- Validate at system boundaries (HTTP handlers, CLI input)
+- Validate at system boundaries (CLI input, API responses)
 
 ### Testing
 
-- `go test ./...` must pass with zero failures
+- `go test -race ./...` must pass with zero failures
 - Coverage threshold: 70%
-- New features require: unit tests + E2E tests
+- New features require unit tests
 - No flaky tests — fix immediately
-- E2E: max 5s per test, 1min suite timeout
 - Prefer table-driven tests with subtests
 
 ### Git Workflow
@@ -46,7 +66,7 @@ All PRs must pass: `make test-all` (lint + unit tests with coverage + E2E tests)
 
 ## Multi-Instance Port Management
 
-Worktree-based port mapping:
+For any HTTP components, worktree-based port mapping:
 - Worktree A=8010, B=8020, C=8030, D=8040, E=8050, F=8060, G=8070
 - Non-worktree: 8080 (default)
 
