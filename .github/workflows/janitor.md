@@ -10,14 +10,6 @@ on:
 
 timeout-minutes: 30
 
-jobs:
-  setup:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/setup-go@v6
-        with:
-          go-version: "1.26"
-
 permissions:
   contents: read
   issues: read
@@ -36,6 +28,13 @@ safe-outputs:
     labels: [janitor]
     max: 2
     close-older-issues: true
+
+network:
+  allowed:
+    - defaults
+    - go
+    - "dl.google.com"
+    - "storage.googleapis.com"
 
 tools:
   bash: true
