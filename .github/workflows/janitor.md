@@ -10,6 +10,13 @@ on:
 
 timeout-minutes: 30
 
+jobs:
+  setup:
+    steps:
+      - uses: actions/setup-go@v6
+        with:
+          go-version: "1.26"
+
 permissions:
   contents: read
   issues: read
