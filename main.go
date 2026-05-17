@@ -12,6 +12,8 @@ import (
 
 const readHeaderTimeout = 5 * time.Second
 
+var version = "dev" //nolint:gochecknoglobals,nolintlint // injected at build time via -ldflags
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -24,7 +26,7 @@ func main() {
 		ReadHeaderTimeout: readHeaderTimeout,
 	}
 
-	slog.Info("server starting", "port", port)
+	slog.Info("server starting", "port", port, "version", version)
 
 	if err := srv.ListenAndServe(); err != nil {
 		slog.Error("server failed", "error", err)
