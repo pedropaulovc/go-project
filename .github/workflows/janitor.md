@@ -34,7 +34,7 @@ tools:
 
 engine:
   id: copilot
-  model: gpt-5-codex
+  model: claude-sonnet-4.5
 ---
 
 # Janitor
