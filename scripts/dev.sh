@@ -63,9 +63,14 @@ fi
 mkdir -p logs
 LOGFILE="logs/run-dev-$(date +%Y%m%d-%H%M%S).log"
 
-echo "Starting dev server on :$PORT (logging to $LOGFILE)"
+echo "Starting dev server on :$PORT with hot reload (logging to $LOGFILE)"
 echo "$$" > "$LOCKFILE"
 
 trap 'rm -f "$LOCKFILE"' EXIT
 
-go run . 2>&1 | tee "$LOGFILE"
+if command -v air &>/dev/null; then
+  air 2>&1 | tee "$LOGFILE"
+else
+  echo "WARN: air not installed, falling back to go run (no hot reload). Run 'make tools' to install."
+  go run . 2>&1 | tee "$LOGFILE"
+fi
