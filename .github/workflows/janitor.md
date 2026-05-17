@@ -29,12 +29,14 @@ safe-outputs:
     max: 2
     close-older-issues: true
 
+runtimes:
+  go:
+    version: "1.26"
+
 network:
   allowed:
     - defaults
     - go
-    - "dl.google.com"
-    - "storage.googleapis.com"
 
 tools:
   bash: true
