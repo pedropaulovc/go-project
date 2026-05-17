@@ -106,9 +106,6 @@ upsert_ruleset "Protect main" <<'JSON'
       }
     },
     {
-      "type": "required_linear_history"
-    },
-    {
       "type": "deletion"
     }
   ]
