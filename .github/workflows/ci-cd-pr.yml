@@ -27,6 +27,15 @@ jobs:
       - run: go vet ./...
       - run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
       - run: go tool cover -func=coverage.out
+      - name: Enforce minimum coverage (70%)
+        run: |
+          total=$(go tool cover -func=coverage.out | awk '/^total:/ {gsub("%","",$3); print $3}')
+          awk -v total="$total" 'BEGIN {
+            if (total + 0 < 70) {
+              printf("Coverage %.1f%% is below required 70%%\n", total + 0)
+              exit 1
+            }
+          }'
       - name: Generate coverage JSON
         run: |
           go tool cover -func=coverage.out | tail -1 | awk '{print "{\"total\": \"" $3 "\"}"}' > coverage-summary.json
