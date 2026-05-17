@@ -4,6 +4,7 @@ package main_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -12,6 +13,12 @@ import (
 	"testing"
 	"time"
 )
+
+type cliIntegrationCase struct {
+	name     string
+	arg      string
+	wantExit int
+}
 
 // buildBinary compiles the binary into a temp directory and returns its path.
 func buildBinary(t *testing.T) string {
@@ -72,12 +79,36 @@ func TestCLIIntegration(t *testing.T) {
 	}
 
 	bin := buildBinary(t)
+	tests, wantOutByName := cliIntegrationCases()
 
-	tests := []struct {
-		name     string
-		arg      string
-		wantExit int
-	}{
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			var args []string
+			if tc.arg != "" {
+				args = append(args, tc.arg)
+			}
+
+			out, exitCode, err := runBinary(t, bin, args...)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if exitCode != tc.wantExit {
+				t.Errorf("exit code = %d, want %d\noutput: %s", exitCode, tc.wantExit, out)
+			}
+
+			if wantOut, ok := wantOutByName[tc.name]; ok && !strings.Contains(string(out), wantOut) {
+				t.Errorf("output %q does not contain %q", string(out), wantOut)
+			}
+		})
+	}
+}
+
+//nolint:gocritic // returning both cases and expectations keeps test data setup concise
+func cliIntegrationCases() ([]cliIntegrationCase, map[string]string) {
+	tests := []cliIntegrationCase{
 		{
 			name:     "no args prints help",
 			wantExit: 0,
@@ -105,30 +136,11 @@ func TestCLIIntegration(t *testing.T) {
 		"version subcommand prints version": "dev",
 	}
 
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-
-			var args []string
-			if tc.arg != "" {
-				args = append(args, tc.arg)
-			}
-
-			out, exitCode := runBinary(t, bin, args...)
-
-			if exitCode != tc.wantExit {
-				t.Errorf("exit code = %d, want %d\noutput: %s", exitCode, tc.wantExit, out)
-			}
-
-			if wantOut, ok := wantOutByName[tc.name]; ok && !strings.Contains(string(out), wantOut) {
-				t.Errorf("output %q does not contain %q", string(out), wantOut)
-			}
-		})
-	}
+	return tests, wantOutByName
 }
 
 //nolint:gocritic // unnamed result avoids nonamedreturns lint in this repo configuration
-func runBinary(t *testing.T, bin string, args ...string) ([]byte, int) {
+func runBinary(t *testing.T, bin string, args ...string) ([]byte, int, error) {
 	t.Helper()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -139,15 +151,13 @@ func runBinary(t *testing.T, bin string, args ...string) ([]byte, int) {
 
 	out, err := cmd.CombinedOutput()
 	if err == nil {
-		return out, 0
+		return out, 0, nil
 	}
 
 	var exitErr *exec.ExitError
 	if errors.As(err, &exitErr) {
-		return out, exitErr.ExitCode()
+		return out, exitErr.ExitCode(), nil
 	}
 
-	t.Fatalf("unexpected error: %v", err)
-
-	return nil, 0
+	return out, 0, fmt.Errorf("run binary: %w", err)
 }
