@@ -2,12 +2,15 @@
 package main_test
 
 import (
+	"context"
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 )
 
 // buildBinary compiles the binary into a temp directory and returns its path.
@@ -15,14 +18,22 @@ func buildBinary(t *testing.T) string {
 	t.Helper()
 
 	dir := t.TempDir()
+
 	name := "myapp"
+
 	if runtime.GOOS == "windows" {
 		name += ".exe"
 	}
 
 	out := filepath.Join(dir, name)
-	cmd := exec.Command("go", "build", "-o", out, ".")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	//nolint:gosec // test build output path is controlled by this test
+	cmd := exec.CommandContext(ctx, "go", "build", "-o", out, ".")
 	cmd.Dir = filepath.Join(findModuleRoot(t), "cmd", "myapp")
+
 	if output, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("build failed: %v\n%s", err, output)
 	}
@@ -56,64 +67,87 @@ func findModuleRoot(t *testing.T) string {
 func TestCLIIntegration(t *testing.T) {
 	t.Parallel()
 
+	if testing.Short() {
+		t.Skip("skipping CLI integration test in short mode")
+	}
+
 	bin := buildBinary(t)
 
 	tests := []struct {
-		name       string
-		args       []string
-		wantExit   int
-		wantStdout string
-		wantStderr string
+		name     string
+		arg      string
+		wantExit int
 	}{
 		{
-			name:       "no args prints help",
-			args:       []string{},
-			wantExit:   0,
-			wantStdout: "myapp",
+			name:     "no args prints help",
+			wantExit: 0,
 		},
 		{
-			name:       "help flag prints usage",
-			args:       []string{"--help"},
-			wantExit:   0,
-			wantStdout: "Usage:",
+			name:     "help flag prints usage",
+			arg:      "--help",
+			wantExit: 0,
 		},
 		{
-			name:       "version subcommand prints version",
-			args:       []string{"version"},
-			wantExit:   0,
-			wantStdout: "dev",
+			name:     "version subcommand prints version",
+			arg:      "version",
+			wantExit: 0,
 		},
 		{
 			name:     "unknown command exits non-zero",
-			args:     []string{"notacommand"},
+			arg:      "notacommand",
 			wantExit: 1,
 		},
+	}
+
+	wantOutByName := map[string]string{
+		"no args prints help":               "myapp",
+		"help flag prints usage":            "Usage:",
+		"version subcommand prints version": "dev",
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			//nolint:gosec // test binary path is constructed in this test
-			cmd := exec.Command(bin, tc.args...)
-			out, err := cmd.CombinedOutput()
-
-			exitCode := 0
-			if err != nil {
-				if exitErr, ok := err.(*exec.ExitError); ok {
-					exitCode = exitErr.ExitCode()
-				} else {
-					t.Fatalf("unexpected error: %v", err)
-				}
+			var args []string
+			if tc.arg != "" {
+				args = append(args, tc.arg)
 			}
+
+			out, exitCode := runBinary(t, bin, args...)
 
 			if exitCode != tc.wantExit {
 				t.Errorf("exit code = %d, want %d\noutput: %s", exitCode, tc.wantExit, out)
 			}
 
-			if tc.wantStdout != "" && !strings.Contains(string(out), tc.wantStdout) {
-				t.Errorf("output %q does not contain %q", string(out), tc.wantStdout)
+			if wantOut, ok := wantOutByName[tc.name]; ok && !strings.Contains(string(out), wantOut) {
+				t.Errorf("output %q does not contain %q", string(out), wantOut)
 			}
 		})
 	}
+}
+
+//nolint:gocritic // unnamed result avoids nonamedreturns lint in this repo configuration
+func runBinary(t *testing.T, bin string, args ...string) ([]byte, int) {
+	t.Helper()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	//nolint:gosec // test binary path is built by this test
+	cmd := exec.CommandContext(ctx, bin, args...)
+
+	out, err := cmd.CombinedOutput()
+	if err == nil {
+		return out, 0
+	}
+
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) {
+		return out, exitErr.ExitCode()
+	}
+
+	t.Fatalf("unexpected error: %v", err)
+
+	return nil, 0
 }
