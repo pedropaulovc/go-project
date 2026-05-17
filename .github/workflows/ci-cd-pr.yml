@@ -31,7 +31,7 @@ jobs:
         run: |
           go tool cover -func=coverage.out | tail -1 | awk '{print "{\"total\": \"" $3 "\"}"}' > coverage-summary.json
       - name: Download baseline
-        uses: dawidd6/action-download-artifact@v6
+        uses: dawidd6/action-download-artifact@v21
         with:
           name: coverage-baseline
           workflow: ci-cd-main.yml
