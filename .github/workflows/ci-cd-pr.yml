@@ -40,22 +40,22 @@ jobs:
         run: |
           go tool cover -func=coverage.out | tail -1 | awk '{print "{\"total\": \"" $3 "\"}"}' > coverage-summary.json
       - name: Download baseline
+        id: download-coverage-baseline
         uses: dawidd6/action-download-artifact@v21
         with:
           name: coverage-baseline
           workflow: ci-cd-main.yml
           branch: main
           if_no_artifact_found: warn
-          path: baseline/
-      - name: Report coverage delta
-        run: |
-          current=$(cat coverage-summary.json | grep -o '[0-9.]*')
-          if [ -f baseline/coverage-summary.json ]; then
-            baseline=$(cat baseline/coverage-summary.json | grep -o '[0-9.]*')
-            echo "## Coverage: ${current}% (baseline: ${baseline}%)" >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "## Coverage: ${current}% (no baseline yet)" >> "$GITHUB_STEP_SUMMARY"
-          fi
+          path: coverage-baseline/
+      - name: Coverage report with delta
+        if: always()
+        uses: davelosert/vitest-coverage-report-action@v2
+        with:
+          file-coverage-mode: changes
+          pr-number: ${{ github.event.pull_request.number }}
+          json-summary-compare-path: ${{ steps.download-coverage-baseline.outcome == 'success' && 'coverage-baseline/coverage-summary.json' || '' }}
+          threshold-icons: "{0: '🔴', 70: '🟡', 75: '🔵', 85: '🟢'}"
 
   build:
     runs-on: ubuntu-latest
