@@ -1,6 +1,7 @@
 package server_test
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -13,7 +14,7 @@ func TestHandleHome(t *testing.T) {
 	t.Parallel()
 
 	srv := server.New()
-	req := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/", http.NoBody)
 	rec := httptest.NewRecorder()
 
 	srv.ServeHTTP(rec, req)
@@ -31,7 +32,7 @@ func TestHandleHealth(t *testing.T) {
 	t.Parallel()
 
 	srv := server.New()
-	req := httptest.NewRequest(http.MethodGet, "/health", http.NoBody)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/health", http.NoBody)
 	rec := httptest.NewRecorder()
 
 	srv.ServeHTTP(rec, req)

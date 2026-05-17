@@ -4,8 +4,8 @@ Template project for Go HTTP applications.
 
 ## Requirements
 
-- Go >= 1.24
-- Node >= 24 (for E2E tests)
+- Go >= 1.26
+- Node >= 26 (for E2E tests)
 - golangci-lint
 
 ## Quick Start
