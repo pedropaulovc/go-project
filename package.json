@@ -1,0 +1,11 @@
+{
+  "name": "go-project-e2e",
+  "private": true,
+  "description": "E2E tests for Go project",
+  "scripts": {
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.52.0"
+  }
+}
