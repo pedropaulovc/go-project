@@ -1,7 +1,7 @@
 .PHONY: dev build run lint vet test test-coverage test-e2e test-all clean
 
 dev:
-	go run .
+	./scripts/dev.sh
 
 build:
 	go build -o bin/server .
