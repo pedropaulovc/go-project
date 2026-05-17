@@ -40,7 +40,6 @@ make test-all     # Run lint + vet + tests with coverage
 ├── cmd/myapp/              # CLI entrypoint
 ├── internal/
 │   └── cmd/                # Cobra command definitions
-├── api/v1alpha1/           # CRD types (K8s operators)
 ├── scripts/
 │   ├── dev.sh              # Dev launcher (port mapping, zombie cleanup)
 │   └── provision-repo.sh   # GitHub repo provisioning
