@@ -1,64 +1,128 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Idempotent repo provisioning script.
-# Safe to run multiple times — skips steps that are already done.
+# Provisions a GitHub repo created from the go-project template.
+# Applies repo settings, branch rulesets, and tag rulesets that templates don't carry over.
+# Safe to run multiple times — existing rulesets are updated in place.
+#
+# Usage:
+#   scripts/provision-repo.sh                  # auto-detects repo from git remote
+#   scripts/provision-repo.sh owner/repo       # explicit repo
 
-REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-cd "$REPO_ROOT"
+REPO="${1:-}"
 
-echo "==> Provisioning go-project..."
-
-# 1. Check Go is installed.
-if ! command -v go &>/dev/null; then
-  echo "ERROR: Go is not installed. Install Go 1.24+ first."
-  exit 1
+if [[ -z "$REPO" ]]; then
+  REPO=$(gh repo view --json nameWithOwner --jq '.nameWithOwner' 2>/dev/null) || {
+    echo "Error: could not detect repo. Pass owner/repo as argument." >&2
+    exit 1
+  }
 fi
-echo "  Go: $(go version)"
 
-# 2. Check golangci-lint is installed.
-if ! command -v golangci-lint &>/dev/null; then
-  echo "  Installing golangci-lint..."
-  go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.6
-fi
-echo "  golangci-lint: $(golangci-lint version --short 2>&1 || golangci-lint --version)"
+echo "Provisioning $REPO ..."
 
-# 3. Install Go dependencies.
-echo "  Running go mod download..."
-go mod download
+# ── Helpers ────────────────────────────────────────────────────────────────────
 
-# 4. Install Node dependencies (for Playwright E2E).
-if command -v npm &>/dev/null; then
-  if [ ! -d node_modules ]; then
-    echo "  Installing npm dependencies..."
-    npm ci
+# Finds an existing ruleset ID by name, or prints empty string.
+ruleset_id_by_name() {
+  gh api "repos/$REPO/rulesets" --jq ".[] | select(.name == \"$1\") | .id" 2>/dev/null || true
+}
+
+# Creates or updates a ruleset. Usage: upsert_ruleset "Name" <<'JSON' ... JSON
+upsert_ruleset() {
+  local name="$1"
+  local body
+  body=$(cat)
+
+  local existing_id
+  existing_id=$(ruleset_id_by_name "$name")
+
+  if [[ -n "$existing_id" ]]; then
+    echo "  Updating ruleset: $name (id $existing_id) ..."
+    echo "$body" | gh api "repos/$REPO/rulesets/$existing_id" -X PUT --silent --input -
   else
-    echo "  node_modules already present, skipping npm ci."
+    echo "  Creating ruleset: $name ..."
+    echo "$body" | gh api "repos/$REPO/rulesets" -X POST --silent --input -
   fi
+}
 
-  # Install Playwright browsers.
-  if ! npx playwright install --dry-run chromium &>/dev/null 2>&1; then
-    echo "  Installing Playwright browsers..."
-    npx playwright install chromium --with-deps
-  else
-    echo "  Playwright browsers already installed."
-  fi
-else
-  echo "  WARN: npm not found — skipping Playwright setup. Install Node 24+ for E2E tests."
-fi
+# ── Repo settings ──────────────────────────────────────────────────────────────
+echo "  Setting merge strategy (merge-only) and auto-merge ..."
+gh api "repos/$REPO" -X PATCH --silent \
+  -f allow_merge_commit=true \
+  -f allow_squash_merge=false \
+  -f allow_rebase_merge=false \
+  -f allow_auto_merge=true \
+  -f merge_commit_title=PR_TITLE \
+  -f merge_commit_message=PR_BODY
 
-# 5. Set up git hooks (Husky).
-if [ -d .husky ]; then
-  git config core.hooksPath .husky
-  echo "  Git hooks path set to .husky"
-fi
+# ── Branch ruleset: Protect main ───────────────────────────────────────────────
+upsert_ruleset "Protect main" <<'JSON'
+{
+  "name": "Protect main",
+  "target": "branch",
+  "enforcement": "active",
+  "conditions": {
+    "ref_name": {
+      "include": ["refs/heads/main"],
+      "exclude": []
+    }
+  },
+  "bypass_actors": [
+    {
+      "actor_id": 5,
+      "actor_type": "RepositoryRole",
+      "bypass_mode": "pull_request"
+    }
+  ],
+  "rules": [
+    {
+      "type": "pull_request",
+      "parameters": {
+        "allowed_merge_methods": ["merge"],
+        "dismiss_stale_reviews_on_push": false,
+        "require_code_owner_review": false,
+        "require_last_push_approval": false,
+        "required_approving_review_count": 0,
+        "required_review_thread_resolution": false
+      }
+    },
+    {
+      "type": "required_status_checks",
+      "parameters": {
+        "do_not_enforce_on_create": false,
+        "strict_required_status_checks_policy": true,
+        "required_status_checks": [
+          { "context": "lint" },
+          { "context": "test" },
+          { "context": "e2e" }
+        ]
+      }
+    },
+    {
+      "type": "deletion"
+    }
+  ]
+}
+JSON
 
-# 6. Verify the setup works.
-echo ""
-echo "==> Verification..."
-echo "  Running lint..."
-golangci-lint run ./...
-echo "  Running tests..."
-go test -race ./...
-echo ""
-echo "==> Done! Run 'make dev' to start the server."
+# ── Tag ruleset: Immutable tags ────────────────────────────────────────────────
+upsert_ruleset "Immutable tags" <<'JSON'
+{
+  "name": "Immutable tags",
+  "target": "tag",
+  "enforcement": "active",
+  "conditions": {
+    "ref_name": {
+      "include": ["refs/tags/v*"],
+      "exclude": []
+    }
+  },
+  "bypass_actors": [],
+  "rules": [
+    { "type": "update" },
+    { "type": "deletion" }
+  ]
+}
+JSON
+
+echo "Done. Rulesets applied to $REPO."
