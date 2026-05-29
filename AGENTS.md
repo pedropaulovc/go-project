@@ -33,7 +33,6 @@ make clean          # Remove build artifacts
 cmd/myapp/          # CLI entrypoint
 internal/cmd/       # Cobra command definitions
 internal/           # Private application logic
-api/v1alpha1/       # CRD types (when doing K8s)
 ```
 
 ### File Naming
@@ -63,11 +62,3 @@ api/v1alpha1/       # CRD types (when doing K8s)
 - PRs must be up-to-date with main before merging
 - Rebase to update: `git pull --rebase origin main`
 - Never bypass hooks (`--no-verify`)
-
-## Multi-Instance Port Management
-
-For any HTTP components, worktree-based port mapping:
-- Worktree A=8010, B=8020, C=8030, D=8040, E=8050, F=8060, G=8070
-- Non-worktree: 8080 (default)
-
-Set via `PORT` environment variable.
