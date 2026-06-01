@@ -1,73 +1,32 @@
-# Go Project
+# Go Project — Agent Reference
 
-## Commands
+## Key Commands
 
 ```bash
-make dev            # Dev server with hot reload (air)
-make build          # Build binary with version tag
-make fmt            # Format code (gofmt + goimports)
-make lint           # golangci-lint (strictest config)
-make vet            # go vet
-make test           # Unit tests with race detector
-make test-coverage  # Tests with coverage report
-make test-all       # REQUIRED before push (lint + vet + coverage)
-make tools          # Install dev tools (air, golangci-lint, goimports)
-make docker         # Build container image
-make clean          # Remove build artifacts
+make test-all   # REQUIRED before every PR (lint + vet + coverage)
+make fmt        # Format (gofmt + goimports)
+make tools      # Install dev tools (air, golangci-lint, goimports)
+make build      # Build binary
+make test       # Unit tests with race detector
 ```
 
-## Code Conventions
-
-### Go
-
-- Go 1.26+ required
-- Use cobra for CLI commands
-- Errors must be handled explicitly — never use `_` for error returns
-- Use structured logging (`log/slog`)
-- Prefer table-driven tests
-- No global mutable state
-
-### Project Structure
+## Structure
 
 ```
-cmd/myapp/          # CLI entrypoint
-internal/cmd/       # Cobra command definitions
-internal/           # Private application logic
-api/v1alpha1/       # CRD types (when doing K8s)
+cmd/myapp/       # CLI entrypoint (main.go + run())
+internal/cmd/    # Cobra command definitions
 ```
 
-### File Naming
+## Conventions
 
-- `snake_case.go` for all Go files
-- `snake_case_test.go` for test files
-- Package names: short, lowercase, no underscores
+- Go 1.26+; cobra for CLI commands
+- `snake_case.go` files; package names lowercase, no underscores
+- No `_` for error returns; wrap errors: `fmt.Errorf("op: %w", err)`
+- Structured logging via `log/slog`; no global mutable state
+- Table-driven tests; coverage threshold 70%; `go test -race ./...` must pass
 
-### Error Handling
+## Git
 
-- Wrap errors with context: `fmt.Errorf("operation: %w", err)`
-- Let errors propagate to appropriate boundaries
-- Validate at system boundaries (CLI input, API responses)
-
-### Testing
-
-- `go test -race ./...` must pass with zero failures
-- Coverage threshold: 70%
-- New features require unit tests
-- No flaky tests — fix immediately
-- Prefer table-driven tests with subtests
-
-### Git Workflow
-
-- Merge only (`gh pr merge --merge --auto`)
-- Squash/rebase merge disabled
-- PRs must be up-to-date with main before merging
+- Merge only — squash/rebase disabled
 - Rebase to update: `git pull --rebase origin main`
-- Never bypass hooks (`--no-verify`)
-
-## Multi-Instance Port Management
-
-For any HTTP components, worktree-based port mapping:
-- Worktree A=8010, B=8020, C=8030, D=8040, E=8050, F=8060, G=8070
-- Non-worktree: 8080 (default)
-
-Set via `PORT` environment variable.
+- Never `--no-verify`
